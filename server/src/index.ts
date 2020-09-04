@@ -1,10 +1,29 @@
-import express from 'express'
-import routes from './routes'
+import express, {Request} from 'express'
+import morgan from 'morgan'
+import fs from 'fs'
+// Rotas
+import tourRoutes from './routes/tourRoutes'
 
 const server = express()
 
+// Middlewares
+if(process.env.NODE_ENV === 'development') {
+  server.use(morgan(':date - :method :status :res[content-length] - :response-time ms', {
+      stream: fs.createWriteStream('./src/access.log', { flags: 'a' })
+  }))
+}
+
 server.use(express.json())
 
-server.use(routes)
+server.use(express.static('public'))
 
-server.listen(3333, () => console.log('Server rodando pela porta 3333...'))
+server.use((request:Request, response, next) => {
+    // request.requestTime = new Date().toISOString()
+    next()
+})
+
+//Rotas
+server.use('/api/v1/tours', tourRoutes)
+
+
+export default server
