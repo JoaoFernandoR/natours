@@ -1,14 +1,14 @@
 import express from 'express'
-import { getAllTours, createTour, getSingleTour, updateTour, deleteTour, checkId, checkBody} from '../controllers/tourController'
+import { getAllTours, createTour, getSingleTour, updateTour, deleteTour,} from '../controllers/tourController'
 
 const router = express.Router()
 
-router.param('id', checkId)
+// router.param('id', checkId)
 
 // /api/v1/tours
 router.route('/')
     .get(getAllTours)
-    .post(checkBody ,createTour)
+    .post(createTour)
 
 router.route('/:id')
 .get(getSingleTour)
