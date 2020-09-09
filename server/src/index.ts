@@ -1,4 +1,4 @@
-import express, {Request} from 'express'
+import express from 'express'
 import morgan from 'morgan'
 import fs from 'fs'
 // Rotas
@@ -16,11 +16,6 @@ if(process.env.NODE_ENV === 'development') {
 server.use(express.json())
 
 server.use(express.static('public'))
-
-server.use((request:Request, response, next) => {
-    // request.requestTime = new Date().toISOString()
-    next()
-})
 
 //Rotas
 server.use('/api/v1/tours', tourRoutes)
