@@ -1,6 +1,5 @@
 import mongoose from 'mongoose'
 import slugify from 'slugify'
-import validator from 'validator'
 
 const TourSchema = new mongoose.Schema({
     name: { 
@@ -10,7 +9,6 @@ const TourSchema = new mongoose.Schema({
         trim: true,
         minlength : [5, 'A tour must have more than 5 characters'],
         maxlength : [30, 'A tour must have less than 20 characters'],
-        validate : [validator.isAlpha, 'Cant have numbers']
     },
     duration : {
         type: Number,

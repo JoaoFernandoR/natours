@@ -1,6 +1,6 @@
 import {Request, Response, NextFunction} from 'express'
 import Tour from '../models/tourModels'
-
+// import AppError from '../utils/AppError'
 
 export const getFiveTop = (request: Request, response: Response, next: NextFunction) => {
     request.query.sort = '-ratingsAverage,price'
@@ -67,51 +67,40 @@ export const getAllTours = async (request: Request, response: Response) => {
     } catch(err) {
         return response.status(400).json({
             status: 'failure',
-            message: err
+            message: err.message
         })
     }
 }
 
-export const createTour = async (request: Request, response: Response) => {
-
-    const sentData = request.body
 
 
-    try {
+export const createTour = async(request: Request, response: Response, next:NextFunction) => {
 
-        const savedDocument = await Tour.create(sentData)
+        const savedDocument = await Tour.create(request.body)
         
-        response.status(200).json({
+        return response.status(200).json({
             status: 'succesfull',
             data : savedDocument
         })
-    } catch(err) {
-        console.log(err)
-        response.status(400).json({
-            status: 'failure',
-            message: 'Something went wrong'
-        })
-    }
+
+        
 
 }
 
-export const getSingleTour = async (request: Request, response:Response) => {
+export const getSingleTour = async(request: Request, response:Response, next:NextFunction) => {
 
-    try {
-        const documentFound =await Tour.findById(request.params.id)
-
-        response.status(200).json({
-            status: 'success',
-            data: documentFound
-        })
-
-    } catch(err) {
-        response.status(404).json({
-            status: 'failure',
-            message: err
-        })
+    const documentFound = await Tour.findById(request.params.id)
+    
+    if(!documentFound) {
+        // return next(new AppError('No Tour found with that id', 404))
+        throw Error('acess denied')
     }
 
+    return response.status(200).json({
+        status: 'success',
+        data: documentFound
+    })
+   
 }
 
 export const updateTour = async (request:Request, response: Response) => {

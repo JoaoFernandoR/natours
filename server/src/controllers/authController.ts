@@ -11,21 +11,27 @@ export const getAllUsers = async (request:Request, response: Response) => {
     })
 }
 
-export const createUser = async (request:Request, response: Response) => {
+export const signUp = async (request:Request, response: Response) => {
 
     try {
         const userResponse = await userModel.create(request.body)
     
-        response.status(200).json({
+        response.status(201).json({
             status: 'success',
             data : userResponse
         })
     } catch(err) {
+
+        var message = err.message
+
+        if (err.code === 11000) {
+            const value = err.message.match(/"(.*?)"/)[0]
+            message = `Duplicate field value: ${value}. Please use another value!`
+        }
+        
         response.status(400).json({
             status: 'failure',
-            message: err.message,
-            name: err.name,
-            stack: err.stack
+            message: message,
         })
     }
 

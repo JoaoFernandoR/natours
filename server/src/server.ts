@@ -14,7 +14,7 @@ mongoose.connect(DB, {
 	useUnifiedTopology : true, 
     useFindAndModify : false,
     useCreateIndex: true
-}).then(() => {console.log('Successfully connected')})
+}).then(() => console.log('Successfully connected'))
 
 // COMEÇO DO SCRIPT
 
@@ -50,3 +50,7 @@ if (process.argv[2] === '--import') {
 
 server.listen(3333, () => console.log('Server rodando pela porta 3333...'))
 
+process.on('unhandledRejection', (err:Error) => {
+    console.log(`Error 💥, cannot stablish connection with server.\nName: ${err.name}, Message: ${err.message}`)
+    process.exit(1) // Is not working
+})

@@ -1,9 +1,17 @@
-import express, {Request, Response} from 'express'
-import fs from 'fs'
+import express from 'express'
+import { signUp } from '../controllers/authController'
+import { getAllUsers } from '../controllers/userController'
 
 const routes = express.Router()
 
 
 
-//rotas users
-// get, post...get, patch, delete
+// /api/v1/users
+routes.route('/signup').post(signUp)
+
+
+routes.route('/')
+    .get(getAllUsers)
+    
+
+export default routes

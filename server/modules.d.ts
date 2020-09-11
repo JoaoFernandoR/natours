@@ -9,8 +9,4 @@ declare namespace NodeJS {
     }
 }
 
-declare namespace Express {
-    export interface Request {
-        requestTime: string[];
-    }
-}
+
