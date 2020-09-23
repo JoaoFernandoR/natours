@@ -1,6 +1,6 @@
 import express from 'express'
-import { signUp } from '../controllers/authController'
-import { getAllUsers } from '../controllers/userController'
+import { signUp, logIn } from '../controllers/authController'
+import { getAllUsers, removeUser } from '../controllers/userController'
 
 const routes = express.Router()
 
@@ -8,10 +8,12 @@ const routes = express.Router()
 
 // /api/v1/users
 routes.route('/signup').post(signUp)
-
+routes.route('/login').post(logIn)
 
 routes.route('/')
     .get(getAllUsers)
     
+routes.route('/:id')
+    .delete(removeUser)
 
 export default routes

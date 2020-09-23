@@ -1,5 +1,14 @@
-import mongoose from 'mongoose'
+import mongoose, { Document } from 'mongoose'
 import validator from 'validator'
+import bcrypt from 'bcryptjs'
+
+interface User extends Document {
+    name: string;
+    photo?: string;
+    email: string;
+    password: string;
+    passwordConfirm: string | undefined;
+  }
 
 const userSchema = new mongoose.Schema({
     name : {
@@ -23,6 +32,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required : [true, 'Must enter a password'],
         minlength: [5, 'The password must have more than 5 characters'],
+        select: false
     },
     passwordConfirm : {
         type: String,
@@ -36,6 +46,24 @@ const userSchema = new mongoose.Schema({
         }
     }
 }, {timestamps: true})
+
+userSchema.pre('save', async function(this:User, next) {
+    // Apenas irá rodar essa função se a senha tiver sido modificada
+    if (!this.isModified('password')) return next()
+
+    // Encrypt or Hash the password
+    this.password = await bcrypt.hash(this.password, 12)
+
+    // Apenas precisamos desse campo pra hora do login, não precisamos guardar no banco de dados
+    this.passwordConfirm = undefined
+
+    next()
+})
+
+// Método que podemos utilizar em qualquer resposta do acesso ao banco de dados
+// userSchema.methods.correctPassword = async (candidatePassword: string, userPassword:string) => {
+//     return await bcrypt.compare(candidatePassword, userPassword)
+// }
 
 const userModel = mongoose.model('User', userSchema)
 
