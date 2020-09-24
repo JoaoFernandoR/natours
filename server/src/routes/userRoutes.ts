@@ -1,5 +1,5 @@
 import express from 'express'
-import { signUp, logIn } from '../controllers/authController'
+import { signUp, logIn, protect } from '../controllers/authController'
 import { getAllUsers, removeUser } from '../controllers/userController'
 
 const routes = express.Router()
@@ -11,7 +11,7 @@ routes.route('/signup').post(signUp)
 routes.route('/login').post(logIn)
 
 routes.route('/')
-    .get(getAllUsers)
+    .get(protect, getAllUsers)
     
 routes.route('/:id')
     .delete(removeUser)

@@ -1,14 +1,17 @@
-import mongoose, { Document } from 'mongoose'
+import { Document } from 'mongoose'
+import mongoose from 'mongoose'
 import validator from 'validator'
 import bcrypt from 'bcryptjs'
 
+// Fala que não é pra exportar
 interface User extends Document {
     name: string;
     photo?: string;
     email: string;
     password: string;
     passwordConfirm: string | undefined;
-  }
+    passwordChangedAt: Date
+  } 
 
 const userSchema = new mongoose.Schema({
     name : {
@@ -44,7 +47,8 @@ const userSchema = new mongoose.Schema({
             },
             message: 'Both Passwords must be the same'
         }
-    }
+    },
+    passwordChangedAt : Date
 }, {timestamps: true})
 
 userSchema.pre('save', async function(this:User, next) {
@@ -64,6 +68,18 @@ userSchema.pre('save', async function(this:User, next) {
 // userSchema.methods.correctPassword = async (candidatePassword: string, userPassword:string) => {
 //     return await bcrypt.compare(candidatePassword, userPassword)
 // }
+
+userSchema.methods.changedPasswordAfter = function(this:User, JWTTimestamp: number) {
+    if(this.passwordChangedAt) {
+        const time = this.passwordChangedAt.getTime()
+        const changedTimeStamp =  time / 1000
+        console.log(changedTimeStamp, JWTTimestamp)
+        
+        return JWTTimestamp < changedTimeStamp
+    }
+    // false means NOT changed
+    return false 
+}
 
 const userModel = mongoose.model('User', userSchema)
 

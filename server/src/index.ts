@@ -1,7 +1,7 @@
 import express, {NextFunction } from 'express'
 import 'express-async-errors'
 import morgan from 'morgan'
-import errorController2 from './controllers/errorController2'
+// import errorController2 from './controllers/errorController2'
 import fs from 'fs'
 // Rotas
 import tourRoutes from './routes/tourRoutes'

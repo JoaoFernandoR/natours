@@ -5,7 +5,7 @@ export const getAllUsers = async (request:Request, response: Response) => {
 
     const userResponse = await userModel.find().select('-__v')
 
-    response.status(200).json({
+    return response.status(200).json({
         status: 'success',
         data : userResponse
     })
