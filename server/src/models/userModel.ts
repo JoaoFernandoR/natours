@@ -1,17 +1,8 @@
-import { Document } from 'mongoose'
 import mongoose from 'mongoose'
 import validator from 'validator'
 import bcrypt from 'bcryptjs'
-
-// Fala que não é pra exportar
-interface User extends Document {
-    name: string;
-    photo?: string;
-    email: string;
-    password: string;
-    passwordConfirm: string | undefined;
-    passwordChangedAt: Date
-  } 
+// Tipos
+import { IUser} from './types'
 
 const userSchema = new mongoose.Schema({
     name : {
@@ -51,7 +42,7 @@ const userSchema = new mongoose.Schema({
     passwordChangedAt : Date
 }, {timestamps: true})
 
-userSchema.pre('save', async function(this:User, next) {
+userSchema.pre('save', async function(this:IUser, next) {
     // Apenas irá rodar essa função se a senha tiver sido modificada
     if (!this.isModified('password')) return next()
 
@@ -69,7 +60,7 @@ userSchema.pre('save', async function(this:User, next) {
 //     return await bcrypt.compare(candidatePassword, userPassword)
 // }
 
-userSchema.methods.changedPasswordAfter = function(this:User, JWTTimestamp: number) {
+userSchema.methods.changedPasswordAfter = function(this:IUser, JWTTimestamp: number) {
     if(this.passwordChangedAt) {
         const time = this.passwordChangedAt.getTime()
         const changedTimeStamp =  time / 1000
@@ -81,6 +72,6 @@ userSchema.methods.changedPasswordAfter = function(this:User, JWTTimestamp: numb
     return false 
 }
 
-const userModel = mongoose.model('User', userSchema)
+const userModel = mongoose.model<IUser>('User', userSchema)
 
 export default userModel

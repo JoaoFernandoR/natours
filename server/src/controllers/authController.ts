@@ -100,7 +100,7 @@ export const protect = async (request: Request, response:Response, next:NextFunc
             const freshUser = await userModel.findById(decoded.id)
             if (!freshUser) throw new Error ('The user belonging to this token no longer exists')
             // 4) Check if user changed after the token was issued
-            const changed = freshUser.schema.methods.changedPasswordAfter(decoded.iat)
+            const changed = freshUser.changedPasswordAfter(decoded.iat)
             if (changed) throw new Error('User recently changed password, please log in again')
         }
         else {
