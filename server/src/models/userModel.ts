@@ -1,4 +1,4 @@
-import mongoose from 'mongoose'
+import mongoose, {HookNextFunction} from 'mongoose'
 import validator from 'validator'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
@@ -47,10 +47,15 @@ const userSchema = new mongoose.Schema({
     },
     passwordChangedAt : Date,
     passwordResetToken : String,
-    passwordResetExpires : Date
+    passwordResetExpires : Date,
+    active : {
+        type: Boolean,
+        default: true,
+        select: false
+    }
 }, {timestamps: true})
 
-userSchema.pre('save', async function(this:IUser, next) {
+userSchema.pre('save', async function(this:IUser, next: HookNextFunction) {
     // Apenas irá rodar essa função se a senha tiver sido modificada
     if (!this.isModified('password')) return next()
 
@@ -63,7 +68,7 @@ userSchema.pre('save', async function(this:IUser, next) {
     next()
 })
 
-userSchema.pre('save', function(this:IUser, next){
+userSchema.pre('save', function(this:IUser, next: HookNextFunction){
     // Poderíamos fazer no controller, mas é boa prática fazer em um pre middleware
     if (!this.isModified('password') || this.isNew ) return next()
 
@@ -72,11 +77,17 @@ userSchema.pre('save', function(this:IUser, next){
 
 })
 
+userSchema.pre(/^find/, function(this:any, next:HookNextFunction){
+    // this irá aponta para qualquer query que começar com FIND
+    // Esse Pre query middleware não irá selecionar nenhum documento que estiver com active false
+    this.find({ active: { $ne : false} })
+    next()
+})
+
 userSchema.methods.changedPasswordAfter = function(this:IUser, JWTTimestamp: number) {
     if(this.passwordChangedAt) {
         const time = this.passwordChangedAt.getTime()
         const changedTimeStamp =  time / 1000
-        console.log(changedTimeStamp, JWTTimestamp)
         
         return JWTTimestamp < changedTimeStamp
     }

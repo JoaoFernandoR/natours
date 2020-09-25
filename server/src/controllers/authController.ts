@@ -217,3 +217,37 @@ export const resetPassword = async (request: Request, response:Response, next:Ne
         })
     }
 }
+
+export const updatePassword = async (request: Request, response:Response, next:NextFunction) => {
+    try {
+
+        const user = response.locals.user
+
+        // 1) Get user from the collection
+        const userFromDb:any = await userModel.findById(user._id).select('+password') //  Vem do middleware protect
+
+        // 2) Check if Posted password is correct
+        const checkPassword = await correctPassword(request.body.passwordCurrent, userFromDb.password)
+        if(!checkPassword) throw new Error('Your current password is wrong')
+    
+        // 3) If the password is correct update the password
+         userFromDb.password = request.body.password
+         userFromDb.passwordConfirm = request.body.passwordConfirm
+        await userFromDb.save() // Não podemos usar findByIdAndUpdate porque o validador do passwordConfirm não vai funcionar, nem os pre middle
+        // 4) Log user in, send JWT
+        const token = signToken(userFromDb._id)
+    
+            return response.status(201).json({
+                status: 'success',
+                token: token,
+            })
+
+    }
+    catch(err) {
+        response.status(400).json({
+            status: "failure",
+            message: err.message
+        })
+    }
+
+}
