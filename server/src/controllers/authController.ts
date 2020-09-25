@@ -1,10 +1,15 @@
 import {promisify} from 'util'
+import crypto from 'crypto'
 import {NextFunction, Request, Response} from 'express'
 import userModel from '../models/userModel'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
+import { IUser } from '../models/types'
+import sendEmail from '../utils/email'
 
-
+export interface IRequest extends Request {
+    user : IUser
+}
 
 const signToken = (id:string) => {
     const token = jwt.sign({id : id}, process.env.JWT_SECRET, {
@@ -25,7 +30,8 @@ export const signUp = async (request:Request, response: Response) => {
             email: request.body.email,
             password: request.body.password,
             passwordConfirm: request.body.passwordConfirm,
-            passwordChangedAt : request.body.passwordChangedAt
+            passwordChangedAt : request.body.passwordChangedAt,
+            role: request.body.role
         })
 
         const token = signToken(newUser._id)
@@ -102,22 +108,112 @@ export const protect = async (request: Request, response:Response, next:NextFunc
             // 4) Check if user changed after the token was issued
             const changed = freshUser.changedPasswordAfter(decoded.iat)
             if (changed) throw new Error('User recently changed password, please log in again')
+            response.locals.user = freshUser  // Passar parâmetro para o próximo middleware
         }
         else {
             throw new Error('You dont have access, please log in')
         }
 
-        // Garantindo acesso à rota protegida
-        // request.user = freshUser // Temos acesso ao objeto request, portando podemos atribuir qualquer coisa para depois aproveitar no próximo middleware que esse vai ser chamado
         next()
     } catch(err) {
-
+        
         if (err.name === 'TokenExpiredError') {
             err.message = "Your token has expired, please sign up again for full privileges"
         }
-
+        
         return response.status(401).json({
             status: 'failure',
             message: err.message,
-    }) }
+        }) }
 } 
+
+export const restrictTo = (request: Request, response:Response, next:NextFunction) => {
+    try {
+        if(response.locals.user.role == 'user') throw new Error('You do not have permission')
+    } catch (err) {
+        response.status(403).json({
+            status: 'failure',
+            message : err.message
+        })
+    }
+    next()
+}
+
+export const forgotPassword = async (request: Request, response:Response, next:NextFunction) => {
+    // 1) Get User based on posted email
+        const user = await userModel.findOne({email : request.body.email})
+
+        if(!user) throw new Error('There is no user with that email adress')
+
+    // 2) generate the random token
+        const resetToken = user.createPasswordResetToken()
+        await user.save({validateBeforeSave : false})
+
+    // 3) Send it to user's email 
+       const resetUrl = `${request.protocol}://${request.get('host')}/api/v1/users/resetpassword/${resetToken}`
+
+       const message = `Forgot your password ? Submit a PATCH request with your new password and passwordConfirm to: ${resetUrl}.\nIf you didnt forget your password, please ignore this message`
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Your password reset token (valid for 10 minutes)',
+                message: message
+            })
+     
+            return response.status(200).json({
+                status: 'success',
+                message: 'Token sent to email'
+            })
+        } catch(err) {
+            user.passwordResetToken = undefined
+            user.passwordResetExpires = undefined
+            await user.save({validateBeforeSave : false})
+
+            return response.status(500).json({
+                status: 'fail',
+                message: 'There was an error sending the email. Try again later!'
+            })
+        }
+}
+
+export const resetPassword = async (request: Request, response:Response, next:NextFunction) => {
+
+    try {
+        // 1) Get user based on Token. O Token que temos no banco de dados é encriptado.
+        const hashedToken = crypto.createHash('sha256').update(request.params.token).digest('hex')
+    
+        const user = await userModel.findOne({
+            passwordResetToken: hashedToken, 
+            passwordResetExpires: { $gt : new Date(Date.now())}
+        })
+    
+        // 2) If token has to expired, and there is user, set the new password
+        if(!user) throw new Error("The Token doesnt exist or has expired")
+
+        user.password = request.body.password
+        user.passwordConfirm = request.body.passwordConfirm
+        user.passwordResetToken = undefined
+        user.passwordResetExpires = undefined
+
+        // 3) Update changedPasswordAt property for the user
+
+
+        await user.save() // Nesse caso queremos que rode a validação
+    
+        // 4) log the user in, send JWT
+        const token = signToken(user._id)
+
+        return response.status(201).json({
+            status: 'success',
+            token: token,
+        })
+
+
+
+    } catch(err) {
+        response.status(400).json({
+            status: "failure",
+            message: err.message
+        })
+    }
+}

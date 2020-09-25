@@ -2,6 +2,7 @@ import express from 'express'
 import { getAllTours, 
     createTour, getSingleTour, updateTour, deleteTour, getFiveTop, 
     getToursStats, getMonthlyPlan} from '../controllers/tourController'
+import { protect, restrictTo } from '../controllers/authController'
 
 const router = express.Router()
 
@@ -19,6 +20,6 @@ router.route('/')
 router.route('/:id')
 .get(getSingleTour)
 .patch(updateTour)
-.delete(deleteTour)
-
+.delete(protect, restrictTo, deleteTour)
+ 
 export default router

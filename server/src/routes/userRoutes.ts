@@ -1,5 +1,5 @@
 import express from 'express'
-import { signUp, logIn, protect } from '../controllers/authController'
+import { signUp, logIn, protect, forgotPassword, resetPassword } from '../controllers/authController'
 import { getAllUsers, removeUser } from '../controllers/userController'
 
 const routes = express.Router()
@@ -9,6 +9,9 @@ const routes = express.Router()
 // /api/v1/users
 routes.route('/signup').post(signUp)
 routes.route('/login').post(logIn)
+
+routes.route('/forgotpassword').post(forgotPassword)
+routes.route('/resetpassword/:token').patch(resetPassword)
 
 routes.route('/')
     .get(protect, getAllUsers)

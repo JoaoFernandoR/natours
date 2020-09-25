@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import validator from 'validator'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 // Tipos
 import { IUser} from './types'
 
@@ -22,6 +23,11 @@ const userSchema = new mongoose.Schema({
         lowercase : true,
         validate : [validator.isEmail, 'Please enter a valid e-mail']
     },
+    role: {
+        type: String,
+        enum: ['user', 'guide', 'lead-guide', 'admin'],
+        default: 'user'
+    },
     password : {
         type: String,
         required : [true, 'Must enter a password'],
@@ -39,7 +45,9 @@ const userSchema = new mongoose.Schema({
             message: 'Both Passwords must be the same'
         }
     },
-    passwordChangedAt : Date
+    passwordChangedAt : Date,
+    passwordResetToken : String,
+    passwordResetExpires : Date
 }, {timestamps: true})
 
 userSchema.pre('save', async function(this:IUser, next) {
@@ -55,10 +63,14 @@ userSchema.pre('save', async function(this:IUser, next) {
     next()
 })
 
-// Método que podemos utilizar em qualquer resposta do acesso ao banco de dados
-// userSchema.methods.correctPassword = async (candidatePassword: string, userPassword:string) => {
-//     return await bcrypt.compare(candidatePassword, userPassword)
-// }
+userSchema.pre('save', function(this:IUser, next){
+    // Poderíamos fazer no controller, mas é boa prática fazer em um pre middleware
+    if (!this.isModified('password') || this.isNew ) return next()
+
+    this.passwordChangedAt = new Date(Date.now() - 1000)
+    next()
+
+})
 
 userSchema.methods.changedPasswordAfter = function(this:IUser, JWTTimestamp: number) {
     if(this.passwordChangedAt) {
@@ -70,6 +82,22 @@ userSchema.methods.changedPasswordAfter = function(this:IUser, JWTTimestamp: num
     }
     // false means NOT changed
     return false 
+}
+
+userSchema.methods.createPasswordResetToken = function(this: IUser) {
+    // Estamos criando esse token para não precisar guardar no banco de dados, é uma prática que tem que ser feita
+    // Mas não precisa ser tão forte assim o token, portanto utilizamos o built-in crypto
+    const resetToken = crypto.randomBytes(32).toString('hex')
+
+    this.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex')
+
+    console.log({resetToken}, this.passwordResetToken)
+
+    const date = Date.now() + 10 * 60 * 1000
+
+    this.passwordResetExpires = new Date(date)
+
+    return resetToken
 }
 
 const userModel = mongoose.model<IUser>('User', userSchema)

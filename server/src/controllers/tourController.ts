@@ -134,7 +134,7 @@ export const deleteTour = async (request:Request, response: Response) => {
     } catch(err) {
         response.status(400).json({
             status: "failure",
-            message: err
+            message: err.message
         })
     }
 

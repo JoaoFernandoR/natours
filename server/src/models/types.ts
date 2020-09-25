@@ -6,9 +6,13 @@ interface IUserDocument extends Document {
     email: string;
     password: string;
     passwordConfirm: string | undefined;
-    passwordChangedAt: Date
+    passwordChangedAt?: Date;
+    role: string;
+    passwordResetToken? : String;
+    passwordResetExpires?: Date;
   }
   
 export interface IUser extends IUserDocument {
-    changedPasswordAfter(JWTTimestamp: number): boolean 
+    changedPasswordAfter(JWTTimestamp: number): boolean;
+    createPasswordResetToken(): string; 
 }
